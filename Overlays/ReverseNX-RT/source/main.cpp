@@ -2,6 +2,8 @@
 #include <tesla.hpp>    // The Tesla Header
 #include "SaltyNX.h"
 
+using namespace tsl;
+
 bool* def = 0;
 bool* isDocked = 0;
 bool* pluginActive = 0;
@@ -79,39 +81,35 @@ public:
 	virtual tsl::elm::Element* createUI() override {
 		// A OverlayFrame is the base element every overlay consists of. This will draw the default Title and Subtitle.
 		// If you need more information in the header or want to change it's look, use a HeaderOverlayFrame.
-		auto frame = new tsl::elm::OverlayFrame("ReverseNX-RT", APP_VERSION);
+		auto frame = new tsl::elm::OverlayFrame("PluginName"_tr, APP_VERSION);
 
 		// A list that can contain sub elements and handles scrolling
 		auto list = new tsl::elm::List();
 		
 		list->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
 			if (!SaltySD) {
-				renderer->drawString("SaltyNX is not working!", false, x, y+50, 20, renderer->a(0xF33F));
-			}
-			else if (!check) {
+				renderer->drawString("SaltySDNotRunningGuiTestCustomDrawerText"_tr.c_str(), false, x, y+50, 20, renderer->a(0xF33F));
+			} else if (!check) {
 				if (closed) {
-					renderer->drawString("Game was closed! Overlay disabled!", false, x, y+20, 19, renderer->a(0xF33F));
+					renderer->drawString("CheckGameClosedGuiTestCustomDrawerText"_tr.c_str(), false, x, y+20, 19, renderer->a(0xF33F));
+				} else {
+					renderer->drawString("CheckNoGameRunningGuiTestCustomDrawerText"_tr.c_str(), false, x, y+20, 19, renderer->a(0xF33F));
 				}
-				else {
-					renderer->drawString("Game is not running! Overlay disabled!", false, x, y+20, 19, renderer->a(0xF33F));
-				}
-			}
-			else if (!PluginRunning) {
-				renderer->drawString("Game is running.", false, x, y+20, 20, renderer->a(0xFFFF));
-				renderer->drawString("ReverseNX-RT is not running!", false, x, y+40, 20, renderer->a(0xF33F));
-			}
-			else {
-				renderer->drawString("ReverseNX-RT is running.", false, x, y+20, 20, renderer->a(0xFFFF));
-				if (!*pluginActive) renderer->drawString("Game didn't check any mode!", false, x, y+40, 18, renderer->a(0xF33F));
+			} else if (!PluginRunning) {
+				renderer->drawString("GameRunningGuiTestCustomDrawerText"_tr.c_str(), false, x, y+20, 20, renderer->a(0xFFFF));
+				renderer->drawString("PlugNotRunningGuiTestCustomDrawerText"_tr.c_str(), false, x, y+40, 20, renderer->a(0xF33F));
+			} else {
+				renderer->drawString("PlugRunningGuiTestCustomDrawerText"_tr.c_str(), false, x, y+20, 20, renderer->a(0xFFFF));
+				if (!*pluginActive) renderer->drawString("GameNotCheckAnyModeGuiTestCustomDrawerText"_tr.c_str(), false, x, y+40, 18, renderer->a(0xF33F));
 				else {
 					renderer->drawString(SystemChar, false, x, y+40, 20, renderer->a(0xFFFF));
 					renderer->drawString(DockedChar, false, x, y+60, 20, renderer->a(0xFFFF));
 				}
 			}
-	}), 100);
+		}), 100);
 
 		if (PluginRunning && *pluginActive) {
-			auto *clickableListItem = new tsl::elm::ListItem("Change system control");
+			auto *clickableListItem = new tsl::elm::ListItem("ChangeSystemControlGuiTestListItemText"_tr.c_str());
 			clickableListItem->setClickListener([](u64 keys) { 
 				if ((keys & HidNpadButton_A) && PluginRunning) {
 					_def = !_def;
@@ -123,7 +121,7 @@ public:
 
 			list->addItem(clickableListItem);
 			
-			auto *clickableListItem2 = new tsl::elm::ListItem("Change mode");
+			auto *clickableListItem2 = new tsl::elm::ListItem("ChangeModeGuiTestListItemText"_tr.c_str());
 			clickableListItem2->setClickListener([](u64 keys) { 
 				if ((keys & HidNpadButton_A) && PluginRunning && !_def) {
 					_isDocked = !_isDocked;
@@ -144,7 +142,7 @@ public:
 
 	// Called once every frame to update values
 	virtual void update() override {
-		static uint8_t i = 10;
+		static uint8_t i = 0;
 		Result rc = pmdmntGetApplicationProcessId(&PID);
 		if (R_FAILED(rc) && PluginRunning) {
 			PluginRunning = false;
@@ -152,21 +150,22 @@ public:
 			closed = true;
 		}
 
+		i++;
 		if (PluginRunning) {
-			if (i > 9) {
+			if (i % 20 == 0) {
 				_def = *def;
 				_isDocked = *isDocked;
-				i = 0;
 
-				if (_isDocked) sprintf(DockedChar, "Mode: Docked");
-				else sprintf(DockedChar, "Mode: Handheld");
-				
-				if (_def) sprintf(SystemChar, "Controlled by system: Yes");
-				else sprintf(SystemChar, "Controlled by system: No");
+				if (_isDocked) sprintf(DockedChar, "UpdateDockModeGuiTestListItemText"_tr.c_str());
+				else sprintf(DockedChar, "UpdateHandleModeGuiTestListItemText"_tr.c_str());
+
+				if (_def) sprintf(SystemChar, "UpdateSystemControlGuiTestListItemText"_tr.c_str());
+				else sprintf(SystemChar, "UpdateNotSystemControlGuiTestListItemText"_tr.c_str());
 			}
-			else i++;
 		}
-	
+
+		if (i % 20 == 0)
+			i = 0;
 	}
 
 	// Called once every frame to handle inputs not handled by other UI elements
@@ -179,16 +178,38 @@ class OverlayTest : public tsl::Overlay {
 public:
 	// libtesla already initialized fs, hid, pl, pmdmnt, hid:sys and set:sys
 	virtual void initServices() override {
+		std::string jsonStr = R"(
+			{
+				"PluginName": "ReverseNx-RT",
+				"SaltySDNotRunningGuiTestCustomDrawerText": "SaltyNX is not working!",
+				"CheckGameClosedGuiTestCustomDrawerText": "Game was closed! Overlay disabled!",
+				"CheckNoGameRunningGuiTestCustomDrawerText": "Game is not running! Overlay disabled!",
+				"GameRunningGuiTestCustomDrawerText": "Game is running.",
+				"PlugNotRunningGuiTestCustomDrawerText": "ReverseNX-RT is not running!",
+				"PlugRunningGuiTestCustomDrawerText": "ReverseNX-RT is running.",
+				"GameNotCheckAnyModeGuiTestCustomDrawerText": "Game didn't check any mode!",
+				"ChangeSystemControlGuiTestListItemText": "Change system control",
+				"ChangeModeGuiTestListItemText": "Change mode",
+				"UpdateDockModeGuiTestListItemText": "Mode: Docked",
+				"UpdateHandleModeGuiTestListItemText": "Mode: Handheld",
+				"UpdateSystemControlGuiTestListItemText": "Controlled by system: Yes",
+				"UpdateNotSystemControlGuiTestListItemText": "Controlled by system: No"
+			}
+		)";
+		std::string lanPath = std::string("sdmc:/switch/.overlays/lang/") + APPTITLE + "/";
+		fsdevMountSdmc();
+		tsl::hlp::doWithSmSession([&lanPath, &jsonStr]{
+			tsl::tr::InitTrans(lanPath, jsonStr);
+		});
+		fsdevUnmountDevice("sdmc");
 
-		tsl::hlp::doWithSmSession([]{
-			
-			fsdevMountSdmc();
+		tsl::hlp::doWithSmSession([] {
 			SaltySD = CheckPort();
 			if (!SaltySD) return;
 
 			if (R_FAILED(pmdmntGetApplicationProcessId(&PID))) return;
 			check = true;
-			
+
 			if(!LoadSharedMemory()) return;
 
 			if (!PluginRunning) {
@@ -199,16 +220,14 @@ public:
 					def = (bool*)(base + rel_offset + 5);
 					pluginActive = (bool*)(base + rel_offset + 6);
 					PluginRunning = true;
-				}		
+				}
 			}
-		
 		});
 	
 	}  // Called at the start to initialize all services necessary for this Overlay
 	
 	virtual void exitServices() override {
 		shmemClose(&_sharedmemory);
-		fsdevUnmountDevice("sdmc");
 	}  // Callet at the end to clean up all services previously initialized
 
 	virtual void onShow() override {}    // Called before overlay wants to change from invisible to visible state
